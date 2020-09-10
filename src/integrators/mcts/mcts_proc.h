@@ -11,7 +11,7 @@ class MCTSWorkProcessor : public WorkProcessor {
 public:
     MCTSWorkProcessor();
 
-    MLTRenderer(Stream *stream, InstanceManager *manager) : WorkProcessor(stream, manager);
+    MCTSWorkProcessor(Stream *stream, InstanceManager *manager) : WorkProcessor(stream, manager);
 
     void serialize(Stream *stream, InstanceManager *manager) const;
 
@@ -28,7 +28,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Sensor> sensor_;
-    ref<Film> fim_;
+    ref<Film> film_;
     ref<Scene> scene_;
     ref<Sampler> sampler_;
 };
