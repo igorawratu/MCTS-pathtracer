@@ -4,6 +4,9 @@
 #include <mitsuba/core/sched.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/render/range.h>
+#include <mitsuba/render/rectwu.h>
+#include <mitsuba/render/imageblock.h>
+#include <vector>
 
 MTS_NAMESPACE_BEGIN
 
@@ -36,24 +39,26 @@ private:
 
 class MCTSProcess : public ParallelProcess {
 public:
-    MCTSProcess(const RenderJob *parent, RenderQueue *queue,
-        const MLTConfiguration &config, const Bitmap *directImage,
-        const std::vector<PathSeed> &seeds);
+    MCTSProcess(const RenderJob *parent, RenderQueue *queue, const std::vector<std::pair<Point2i, Vector2i>>& image_blocks);
 
-    void develop();
-
-    /* ParallelProcess impl. */
     void processResult(const WorkResult *wr, bool cancelled);
     ref<WorkProcessor> createWorkProcessor() const;
     void bindResource(const std::string &name, int id);
     EStatus generateWork(WorkUnit *unit, int worker);
 
+    ImageBlock* accumulator(){return accumulator_;}
+
     MTS_DECLARE_CLASS()
 protected:
     /// Virtual destructor
-    virtual ~MCTSProcess() { }
+    virtual ~MCTSProcess();
 private:
-
+    std::vector<std::pair<Point2i, Vector2i>> image_blocks_;
+    ImageBlock* accumulator_;
+    ProgressReporter* progress_;
+    ref<Film> film_;
+    std::uint32_t result_counter_, generate_counter_;
+    ref<const RenderJob> renderjob_;
 };
 
 
