@@ -2,6 +2,7 @@
 
 #include <stack>
 #include <unordered_map>
+#include <vector>
 
 MTS_NAMESPACE_BEGIN
 
@@ -10,6 +11,7 @@ MCTSTreeNode::MCTSTreeNode(std::uint32_t num_children) :
     prob_acc(0.f),
     val(0.f),
     visited(0){
+
 }
 
 MCTSTreeNode::~MCTSTreeNode(){
@@ -18,16 +20,19 @@ MCTSTreeNode::~MCTSTreeNode(){
 
 MCTSTree::MCTSTree(const std::pair<Point2i, Vector2i>& sensor_area, ImageBlock* wr, std::unique_ptr<SelectionPolicy> spol, 
         std::unique_ptr<DefaultPolicy> dpol, std::unique_ptr<PathGenerator> pathgen, std::unique_ptr<ContributionCalculator> contrib, 
-        std::unique_ptr<NodeDiscretizer> ndisc) : 
+        std::unique_ptr<NodeDiscretizer> ndisc, Sampler* sampler, Scene* scene) : 
             sensor_area_(sensor_area), 
             wr_(wr), 
             spol_(std::move(spol)), 
             dpol_(std::move(dpol)),
             pathgen_(std::move(pathgen)),
             contrib_(std::move(contrib)),
-            ndisc_(std::move(ndisc)){
+            ndisc_(std::move(ndisc)),
+            sampler_(sampler),
+            scene_(scene){
     std::uint32_t root_children = ndisc_->getNumChildren(sensor_area_);
     root_ = std::unique_ptr<MCTSTreeNode>(new MCTSTreeNode(root_children));
+
 }
 
 MCTSTree::~MCTSTree(){
@@ -39,26 +44,36 @@ void MCTSTree::iterate(){
     std::vector<float> probabilities;
 
     //selection and expansion
-    std::vector<Intersection> path = pathgen_->GeneratePath(sensor_area_, root_.get(), spol_, ndisc_, visited_children, probabilities);
+    std::vector<Intersection> path = pathgen_->generatePath(sensor_area_, root_.get(), spol_.get(), 
+        ndisc_.get(), visited_children, probabilities, sampler_, scene_);
 
     //simulate from last node to obtain result
-    Spectrum simulated = dpol_->simulate(path.back());
+    Vector3f wo;
+    Spectrum simulated = dpol_->simulate(path.back(), wo);
     std::stack<MCTSTreeNode*> visited_nodes;
 
     //backpropagation to update stats
-    MCTSTreeNode* curr = root_;
+    MCTSTreeNode* curr = root_.get();
     for(std::uint32_t i = 0; i < visited_children.size(); ++i){
         curr = curr->children[visited_children[i]];
-        visited_nodes.push_back(curr);
+        visited_nodes.push(curr);
     }
 
     while(!visited_nodes.empty()){
-        curr = visited_nodes.pop_back();
-        simulated = computeContribution(path.back(), simulated);
+        curr = visited_nodes.top();
+        visited_nodes.pop();
+        Intersection curr_its = path.back();
+        simulated = contrib_->computeContribution(path.back(), wo, simulated);
+        path.pop_back();
         curr->prob_acc += probabilities.back();
         probabilities.pop_back();
         curr->val += simulated;
         curr->visited++;
+        
+        //update wo if we have not yet processed all nodes
+        if(path.size() > 0){
+            wo = Vector3f(normalize(curr_its.p - path.back().p));
+        }
     }
 }
 
@@ -71,8 +86,8 @@ void MCTSTree::develop(std::mutex& wr_mutex){
         if(root_->children[i] == nullptr){
             continue;
         }
-        Point2i pixel = ndisc_->getChildSensorCoord(sensor_area_, i);
-        std::uint32_t pixel_idx = pixel.x + pixel.y * size.x;
+        auto pixel = ndisc_->getChildSensorCoord(sensor_area_, i);
+        std::uint32_t pixel_idx = pixel.first.x + pixel.first.y * size.x;
 
         if(total_sampled.find(pixel_idx) != total_sampled.end()){
             total_sampled[pixel_idx] += root_->children[i]->visited;
@@ -85,8 +100,8 @@ void MCTSTree::develop(std::mutex& wr_mutex){
             continue;
         }
 
-        Point2i pixel = ndisc_->getChildSensorCoord(sensor_area_, i);
-        std::uint32_t pixel_idx = pixel.x + pixel.y * size.x;
+        auto pixel = ndisc_->getChildSensorCoord(sensor_area_, i);
+        std::uint32_t pixel_idx = pixel.first.x + pixel.first.y * size.x;
 
         Spectrum child_contrib = root_->children[i]->val / root_->children[i]->prob_accum * 
             ((float)root_->children[i]->visited / total_sampled[pixel_idx]);
