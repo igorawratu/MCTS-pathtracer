@@ -3,8 +3,18 @@
 MTS_NAMESPACE_BEGIN
 
 Spectrum SimpleContributionCalculator::computeContribution(Intersection& its, Vector3f wo, Spectrum incoming){
+    Spectrum contrib(0.f);
+
+    if(!its.isValid()){
+        return contrib;
+    }
+
     BSDFSamplingRecord bsrec(its, its.toLocal(wo));
-    return its.getBSDF()->eval(bsrec);
+    contrib = its.getBSDF()->eval(bsrec);
+
+    if(its.isEmitter()){
+        contrib += its.Le(its.wi);
+    }
 }
 
 MTS_NAMESPACE_END

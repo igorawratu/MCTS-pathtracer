@@ -23,12 +23,12 @@ public:
 
 class SelectionPolicy{
 public:
-    virtual std::uint32_t selectChild(MCTSTreeNode* current) = 0;
+    virtual std::uint32_t selectChild(MCTSTreeNode* current, float& probability) = 0;
 };
 
 class DefaultPolicy{
 public:
-    virtual Spectrum simulate(Intersection& its, Vector3f& wo) = 0;
+    virtual Spectrum simulate(Intersection& its, Vector3f& wo, Sampler* sampler, Scene* scene) = 0;
 };
 
 class NodeDiscretizer{
@@ -36,7 +36,7 @@ public:
     virtual std::uint32_t getNumChildren(const std::pair<Point2i, Vector2i>& sensor_area) = 0;
     virtual std::uint32_t getNumChildren(const Intersection& its) = 0;
     virtual std::pair<Vector2f, Vector2f> getChildItsCoordRange(const Intersection& its, std::uint32_t child) = 0;
-    virtual std::pair<Point2i, Vector2f> getChildSensorCoord(const std::pair<Point2i, Vector2i>& sensor_area, std::uint32_t child) = 0;
+    virtual Point2i getChildSensorCoord(const std::pair<Point2i, Vector2i>& sensor_area, std::uint32_t child, std::pair<Point2, Vector2f>& sub_area) = 0;
 };
 
 class PathGenerator{

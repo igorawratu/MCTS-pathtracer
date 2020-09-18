@@ -49,7 +49,7 @@ void MCTSTree::iterate(){
 
     //simulate from last node to obtain result
     Vector3f wo;
-    Spectrum simulated = dpol_->simulate(path.back(), wo);
+    Spectrum simulated = dpol_->simulate(path.back(), wo, sampler_, scene_);
     std::stack<MCTSTreeNode*> visited_nodes;
 
     //backpropagation to update stats
@@ -82,12 +82,14 @@ void MCTSTree::develop(std::mutex& wr_mutex){
     std::unordered_map<std::uint32_t, std::uint32_t> total_sampled;
     std::unordered_map<std::uint32_t, Spectrum> final_pixel_values;
 
+    std::uint32_t child, std::pair<Point2, Vector2f> sub_area;
+
     for(std:uint32_t i = 0; i < root_->children.size(); ++i){
         if(root_->children[i] == nullptr){
             continue;
         }
-        auto pixel = ndisc_->getChildSensorCoord(sensor_area_, i);
-        std::uint32_t pixel_idx = pixel.first.x + pixel.first.y * size.x;
+        Point2i pixel = ndisc_->getChildSensorCoord(sensor_area_, i, sub_area);
+        std::uint32_t pixel_idx = pixel.x + pixel.y * size.x;
 
         if(total_sampled.find(pixel_idx) != total_sampled.end()){
             total_sampled[pixel_idx] += root_->children[i]->visited;
@@ -100,8 +102,8 @@ void MCTSTree::develop(std::mutex& wr_mutex){
             continue;
         }
 
-        auto pixel = ndisc_->getChildSensorCoord(sensor_area_, i);
-        std::uint32_t pixel_idx = pixel.first.x + pixel.first.y * size.x;
+        Point2i pixel = ndisc_->getChildSensorCoord(sensor_area_, i, sub_area);
+        std::uint32_t pixel_idx = pixel.x + pixel.y * size.x;
 
         Spectrum child_contrib = root_->children[i]->val / root_->children[i]->prob_accum * 
             ((float)root_->children[i]->visited / total_sampled[pixel_idx]);
