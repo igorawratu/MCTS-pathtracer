@@ -105,7 +105,7 @@ void MCTSTree::develop(std::mutex& wr_mutex){
         Point2i pixel = ndisc_->getChildSensorCoord(sensor_area_, i, sub_area);
         std::uint32_t pixel_idx = pixel.x + pixel.y * size.x;
 
-        Spectrum child_contrib = root_->children[i]->val / root_->children[i]->prob_accum * 
+        Spectrum child_contrib = root_->children[i]->val / root_->children[i]->prob_acc * 
             ((float)root_->children[i]->visited / total_sampled[pixel_idx]);
 
         if(final_pixel_values.find(pixel_idx) != final_pixel_values.end()){

@@ -35,7 +35,7 @@ std::vector<Intersection> UniformPathGenerator::generatePath(const std::pair<Poi
     MCTSTreeNode* last = root;
 
     while(curr != nullptr && its.isValid() && !its.isEmitter()){
-        child = spol->selectChild(child, prob);
+        child = spol->selectChild(child, its, prob);
         auto coord_range = ndisc->getChildItsCoordRange(its, child);
         Vector2f scoords = coord_range.first + sampler->next2D() * coord_range.second;
         
