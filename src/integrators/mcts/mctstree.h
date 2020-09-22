@@ -23,6 +23,7 @@ public:
 
 class SelectionPolicy{
 public:
+    virtual std::uint32_t selectSensorChild(MCTSTreeNode* current, float& probability) = 0;
     virtual std::uint32_t selectChild(MCTSTreeNode* current, const Intersection& its, float& probability) = 0;
 };
 
@@ -43,7 +44,7 @@ class PathGenerator{
 public:
     virtual std::vector<Intersection> generatePath(const std::pair<Point2i, Vector2i>& sensor_area, 
         MCTSTreeNode* root, SelectionPolicy* spol, NodeDiscretizer* ndisc, std::vector<std::uint32_t>& child_indices,
-        std::vector<float>& probabilities, Sampler* sampler, Scene* scene) = 0;
+        std::vector<float>& probabilities, Sampler* sampler, Scene* scene, bool sample_time, bool sample_aperture) = 0;
 };
 
 class ContributionCalculator{

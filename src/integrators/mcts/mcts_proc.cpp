@@ -1,5 +1,7 @@
 #include "mcts_proc.h"
 
+MTS_NAMESPACE_BEGIN
+
 MCTSWorkProcessor::MCTSWorkProcessor(){
 
 }
@@ -25,7 +27,7 @@ void MCTSWorkProcessor::prepare(){
     sampler_ = static_cast<Sampler *>(getResource("sampler"));
     sensor_ = static_cast<Sensor *>(getResource("sensor"));
     scene_ = new Scene(scene);
-    film_ = sensor->getFilm();
+    film_ = sensor_->getFilm();
 
     scene_->setSensor(sensor_);
     scene_->setSampler(sampler_);
@@ -54,11 +56,10 @@ MCTSProcess::MCTSProcess(const RenderJob *parent, RenderQueue *queue, const std:
 
 MCTSProcess::~MCTSProcess(){
     delete progress_;
-    delete accumulator_;
 }
 
-void MCTSProcess::processResult(const WorkResult *result, bool cancelled){
-    const ImageBlock *result = static_cast<const ImageBlock *>(result);
+void MCTSProcess::processResult(const WorkResult *wr, bool cancelled){
+    const ImageBlock *result = static_cast<const ImageBlock *>(wr);
     accumulator_->put(result);
     progress_->update(++result_counter_);
 }
@@ -71,22 +72,24 @@ void MCTSProcess::bindResource(const std::string &name, int id){
     ParallelProcess::bindResource(name, id);
     if (name == "sensor") {
         film_ = static_cast<Sensor *>(Scheduler::getInstance()->getResource(id))->getFilm();
-        if (m_progress)
-            delete m_progress;
+        if (progress_)
+            delete progress_;
         progress_ = new ProgressReporter("Rendering", image_blocks_.size(), renderjob_);
         accumulator_ = new ImageBlock(Bitmap::ESpectrum, film_->getCropSize());
         accumulator_->clear();
     }
 }
 
-EStatus MCTSProcess::generateWork(WorkUnit *unit, int worker){
+ParallelProcess::EStatus MCTSProcess::generateWork(WorkUnit *unit, int worker){
     if (generate_counter_ >= image_blocks_.size())
         return EFailure;
 
     auto rect = image_blocks_[generate_counter_++];
     RectangularWorkUnit* work_unit = static_cast<RectangularWorkUnit*>(unit);
-    work_unit->setSize(rect.first);
-    work_unit->setOffset(rect.second);
+    work_unit->setSize(rect.second);
+    work_unit->setOffset(rect.first);
 
     return ESuccess;
 }
+
+MTS_NAMESPACE_END

@@ -6,6 +6,11 @@
 #include <mitsuba/render/range.h>
 #include <mitsuba/render/rectwu.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/film.h>
+#include <mitsuba/render/scene.h>
+#include <mitsuba/render/sampler.h>
+#include <mitsuba/render/sensor.h>
+#include <mitsuba/core/statistics.h>
 #include <vector>
 
 MTS_NAMESPACE_BEGIN
@@ -14,7 +19,7 @@ class MCTSWorkProcessor : public WorkProcessor {
 public:
     MCTSWorkProcessor();
 
-    MCTSWorkProcessor(Stream *stream, InstanceManager *manager) : WorkProcessor(stream, manager);
+    MCTSWorkProcessor(Stream *stream, InstanceManager *manager);
 
     void serialize(Stream *stream, InstanceManager *manager) const;
 
@@ -54,7 +59,7 @@ protected:
     virtual ~MCTSProcess();
 private:
     std::vector<std::pair<Point2i, Vector2i>> image_blocks_;
-    ImageBlock* accumulator_;
+    ref<ImageBlock> accumulator_;
     ProgressReporter* progress_;
     ref<Film> film_;
     std::uint32_t result_counter_, generate_counter_;

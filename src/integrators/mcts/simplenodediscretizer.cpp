@@ -28,7 +28,7 @@ Point2i SimpleNodeDiscretizer::getChildSensorCoord(const std::pair<Point2i, Vect
     std::uint32_t x_pos = child % sensor_area.second.x + sensor_area.first.x;
     std::uint32_t y_pos = child / sensor_area.second.y + sensor_area.first.y;
 
-    sub_area = std::make_pair(Point2i(0), Vector2f(1.f));
+    sub_area = std::make_pair(Point2(0.f), Vector2f(1.f));
 
     return Point2i(x_pos, y_pos);
 }

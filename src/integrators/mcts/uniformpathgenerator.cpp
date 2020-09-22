@@ -1,4 +1,5 @@
 #include "uniformpathgenerator.h"
+#include <mitsuba/render/scene.h>
 
 MTS_NAMESPACE_BEGIN
 
@@ -10,19 +11,21 @@ std::vector<Intersection> UniformPathGenerator::generatePath(const std::pair<Poi
     ref<Sensor> sensor = scene->getSensor();
 
     float prob;
-    std::uint32_t child = spol->selectChild(root, prob);
+    std::uint32_t child = spol->selectSensorChild(root, prob);
 
-    std::uint32_t child, std::pair<Point2, Vector2f> sub_area;
+    std::pair<Point2, Vector2f> sub_area;
     Point2i pixel_coords = ndisc->getChildSensorCoord(sensor_area, child, sub_area);
 
-    Point2 offset = sub_area.first + sampler->next2D() * sub_area.second;
-    Point2 sensor_coord = pixel_coords + offset;
+    Point2 sampled = sampler->next2D();
+    Point2 offset = sub_area.first + Point2(float(sub_area.second.x) * 
+        sampled.x, float(sub_area.second.y) * sampled.y);
+    Point2 sensor_coord = Point2(pixel_coords) + offset;
 
     Point2 aperture_sample = sample_aperture ? sampler->next2D() : Point2(0.5f, 0.5f);
     Float time_sample = sample_time ? sampler->next1D() : 0.5f;
 
     Ray ray;
-    sensor->sampleRay(ray, sample_position, aperture_sample, time_sample);
+    sensor->sampleRay(ray, sensor_coord, aperture_sample, time_sample);
     
     Intersection its;
     scene->rayIntersect(ray, its);
@@ -35,9 +38,11 @@ std::vector<Intersection> UniformPathGenerator::generatePath(const std::pair<Poi
     MCTSTreeNode* last = root;
 
     while(curr != nullptr && its.isValid() && !its.isEmitter()){
-        child = spol->selectChild(child, its, prob);
+        child = spol->selectChild(curr, its, prob);
         auto coord_range = ndisc->getChildItsCoordRange(its, child);
-        Vector2f scoords = coord_range.first + sampler->next2D() * coord_range.second;
+        Point2 sampled = sampler->next2D();
+        Vector2f scoords = coord_range.first + Vector2f(sampled.x * coord_range.second.x, 
+            sampled.y * coord_range.second.y);
         
         Vector3f wi(0.f);
         wi.x = sin(scoords.y) * cos(scoords.x);
@@ -49,7 +54,7 @@ std::vector<Intersection> UniformPathGenerator::generatePath(const std::pair<Poi
         scene->rayIntersect(ray, its);
 
         last = curr;
-        curr = curr->children[child];
+        curr = curr->children[child].get();
 
         path_verts.push_back(its);
         probabilities.push_back(prob);
@@ -57,7 +62,7 @@ std::vector<Intersection> UniformPathGenerator::generatePath(const std::pair<Poi
     }
 
     if(curr == nullptr){
-        std::uint32_t num_children = ndisc_->getNumChildren(its);
+        std::uint32_t num_children = ndisc->getNumChildren(its);
         last->children[child] = std::unique_ptr<MCTSTreeNode>(new MCTSTreeNode(num_children));
     }
 

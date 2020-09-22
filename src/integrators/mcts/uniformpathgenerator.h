@@ -13,7 +13,7 @@ public:
 
     std::vector<Intersection> generatePath(const std::pair<Point2i, Vector2i>& sensor_area, 
         MCTSTreeNode* root, SelectionPolicy* spol, NodeDiscretizer* ndisc, std::vector<std::uint32_t>& child_indices,
-        std::vector<float>& probabilities, Sampler* sampler, Scene* scene);
+        std::vector<float>& probabilities, Sampler* sampler, Scene* scene, bool sample_time, bool sample_aperture);
 };
 
 MTS_NAMESPACE_END

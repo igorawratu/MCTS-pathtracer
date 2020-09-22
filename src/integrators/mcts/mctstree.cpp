@@ -3,11 +3,14 @@
 #include <stack>
 #include <unordered_map>
 #include <vector>
+#include <mitsuba/render/shape.h>
+#include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/scene.h>
 
 MTS_NAMESPACE_BEGIN
 
 MCTSTreeNode::MCTSTreeNode(std::uint32_t num_children) : 
-    children(num_children, nullptr),
+    children(num_children),
     prob_acc(0.f),
     val(0.f),
     visited(0){
@@ -40,12 +43,15 @@ MCTSTree::~MCTSTree(){
 }
 
 void MCTSTree::iterate(){
+    ref<Sensor> sensor = scene_->getSensor();
+    bool sample_aperture = sensor->needsApertureSample();
+    bool sample_time = sensor->needsTimeSample();
     std::vector<std::uint32_t> visited_children;
     std::vector<float> probabilities;
 
     //selection and expansion
     std::vector<Intersection> path = pathgen_->generatePath(sensor_area_, root_.get(), spol_.get(), 
-        ndisc_.get(), visited_children, probabilities, sampler_, scene_);
+        ndisc_.get(), visited_children, probabilities, sampler_, scene_, sample_time, sample_aperture);
 
     //simulate from last node to obtain result
     Vector3f wo;
@@ -55,7 +61,7 @@ void MCTSTree::iterate(){
     //backpropagation to update stats
     MCTSTreeNode* curr = root_.get();
     for(std::uint32_t i = 0; i < visited_children.size(); ++i){
-        curr = curr->children[visited_children[i]];
+        curr = curr->children[visited_children[i]].get();
         visited_nodes.push(curr);
     }
 
@@ -82,9 +88,9 @@ void MCTSTree::develop(std::mutex& wr_mutex){
     std::unordered_map<std::uint32_t, std::uint32_t> total_sampled;
     std::unordered_map<std::uint32_t, Spectrum> final_pixel_values;
 
-    std::uint32_t child, std::pair<Point2, Vector2f> sub_area;
+    std::pair<Point2, Vector2f> sub_area;
 
-    for(std:uint32_t i = 0; i < root_->children.size(); ++i){
+    for(std::uint32_t i = 0; i < root_->children.size(); ++i){
         if(root_->children[i] == nullptr){
             continue;
         }
@@ -97,7 +103,7 @@ void MCTSTree::develop(std::mutex& wr_mutex){
         else total_sampled[pixel_idx] = root_->children[i]->visited;
     }
 
-    for(std:uint32_t i = 0; i < root_->children.size(); ++i){
+    for(std::uint32_t i = 0; i < root_->children.size(); ++i){
         if(root_->children[i] == nullptr){
             continue;
         }
@@ -118,8 +124,8 @@ void MCTSTree::develop(std::mutex& wr_mutex){
         std::lock_guard<std::mutex> lock(wr_mutex);
 
         for(auto iter = final_pixel_values.begin(); iter != final_pixel_values.end(); ++iter){
-            Point2i pixel(iter->first % size.x, iter->first / size.x);
-            wr_->put(pixel, iter->second);
+            Point2 pixel(iter->first % size.x, iter->first / size.x);
+            wr_->put(pixel, iter->second, 1.f);
         }
     }
 }

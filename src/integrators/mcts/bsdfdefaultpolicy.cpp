@@ -1,11 +1,13 @@
 #include "bsdfdefaultpolicy.h"
-
+#include <mitsuba/render/shape.h>
+#include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/scene.h>
 
 MTS_NAMESPACE_BEGIN
 
 Spectrum BSDFDefaultPolicy::simulate(Intersection& its, Vector3f& wo, Sampler* sampler, Scene* scene){
     //does not matter as incoming does not get accounted here
-    if(!curr_its.isValid() || curr_its.isEmitter()){
+    if(!its.isValid() || its.isEmitter()){
         return Spectrum(0.f);
     }
 
@@ -15,7 +17,7 @@ Spectrum BSDFDefaultPolicy::simulate(Intersection& its, Vector3f& wo, Sampler* s
 
     while(vert_count++ < max_verts_ && curr_its.isValid() && !curr_its.isEmitter()){
         BSDFSamplingRecord bsr(curr_its, sampler);
-        col *= bsdf->sample(bsdf_sample_record, sampler->next2D());
+        col *= curr_its.getBSDF()->sample(bsr, sampler->next2D());
 
         Ray ray(curr_its.p, bsr.its.toWorld(bsr.wo), curr_its.time);
         scene->rayIntersect(ray, curr_its);

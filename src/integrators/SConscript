@@ -19,6 +19,9 @@ plugins += env.SharedLibrary('irrcache', ['misc/irrcache.cpp', 'misc/irrcache_pr
 plugins += env.SharedLibrary('multichannel', ['misc/multichannel.cpp'])
 plugins += env.SharedLibrary('field', ['misc/field.cpp'])
 plugins += env.SharedLibrary('motion', ['misc/motion.cpp'])
+plugins += env.SharedLibrary('mcts', ['mcts/mcts.cpp', 'mcts/mcts_proc.cpp', 'mcts/mctstree.cpp',
+    'mcts/bsdfdefaultpolicy.cpp', 'mcts/simplecontributioncalculator.cpp', 'mcts/simplenodediscretizer.cpp',
+    'mcts/simpleselectionpol.cpp', 'mcts/uniformpathgenerator.cpp'])
 
 # Bidirectional techniques
 bidirEnv = env.Clone()

@@ -14,6 +14,7 @@ public:
     ~SimpleSelectionPolicy(){}
 
     std::uint32_t selectChild(MCTSTreeNode* current, const Intersection& its, float& probability);
+    std::uint32_t selectSensorChild(MCTSTreeNode* current, float& probability);
 
 private:
     std::mt19937 rng_;

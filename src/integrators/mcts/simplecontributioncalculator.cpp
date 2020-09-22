@@ -1,5 +1,8 @@
 #include "simplecontributioncalculator.h"
 
+#include <mitsuba/render/shape.h>
+#include <mitsuba/render/bsdf.h>
+
 MTS_NAMESPACE_BEGIN
 
 Spectrum SimpleContributionCalculator::computeContribution(Intersection& its, Vector3f wo, Spectrum incoming){
@@ -15,6 +18,8 @@ Spectrum SimpleContributionCalculator::computeContribution(Intersection& its, Ve
     if(its.isEmitter()){
         contrib += its.Le(its.wi);
     }
+
+    return contrib;
 }
 
 MTS_NAMESPACE_END

@@ -4,7 +4,7 @@
 #include <mitsuba/core/fstream.h>
 #include <vector>
 
-#include "mlt_proc.h"
+#include "mcts_proc.h"
 
 
 MTS_NAMESPACE_BEGIN
@@ -40,7 +40,7 @@ public:
         ref<Scheduler> scheduler = Scheduler::getInstance();
         ref<Sensor> sensor = scene->getSensor();
         ref<Sampler> sampler = sensor->getSampler();
-        const Film *film = sensor->getFilm();
+        ref<Film> film = sensor->getFilm();
 
         Vector2i film_size = film->getCropSize();
         Vector2i block_size(64, 64);
@@ -67,7 +67,7 @@ public:
         scheduler->schedule(process);
         scheduler->wait(process);
 
-        film->setBitmap((Spectrum *)process->accumulator()->getBitmap()->getData());
+        film->setBitmap(process->accumulator()->getBitmap());
 
         return process->getReturnStatus() == ParallelProcess::ESuccess;
     }
