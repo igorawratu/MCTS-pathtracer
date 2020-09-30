@@ -8,6 +8,12 @@
 
 MTS_NAMESPACE_BEGIN
 
+struct MCTSResult{
+    float p;
+    Spectrum v;
+    std::uint32_t child_idx;
+};
+
 class MCTSTreeNode{
 public:
     MCTSTreeNode() = delete;
@@ -16,6 +22,8 @@ public:
     ~MCTSTreeNode();
 
     std::vector<std::unique_ptr<MCTSTreeNode>> children;
+    std::vector<float> probabilities;
+    std::vector<MCTSResult> results;
     float prob_acc;
     Spectrum val;
     std::uint32_t visited;

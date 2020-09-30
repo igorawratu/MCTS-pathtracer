@@ -11,6 +11,7 @@ MTS_NAMESPACE_BEGIN
 
 MCTSTreeNode::MCTSTreeNode(std::uint32_t num_children) : 
     children(num_children),
+    probabilities(num_children, 0.f),
     prob_acc(0.f),
     val(0.f),
     visited(0){
